@@ -3,20 +3,39 @@ import numpy as np
 
 
 def main():
-
     """
     train_x, train_y -- the already known data, already classified
     test_x --- todo: Determine its labels according to the distance to train_x, train_y
-    :return:
     """
+
+    total_iterations = 12
     train_x, train_y, test_x = sys.argv[1], sys.argv[2], sys.argv[3]
+    # choose_k_to_knn_alg(train_x, train_y)
 
-    # this will be relevant after we'll pick up the the value of K
+    # this will be relevant after choosing the value of K (after we determined its value using choose_k_to_knn_alg)
     test_to_determine = np.loadtxt(test_x, delimiter=',', converters={11: lambda d: 1 if d == b'R' else 0})
-    choose_k_to_knn_alg(train_x, train_y)
+    training_arr = np.loadtxt(train_x, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
+    label_arr = np.genfromtxt(train_y)
+
+    # inspiration for Min-Max normalization:
+    # https://towardsdatascience.com/everything-you-need-to-know-about-min-max-normalization-in-python-b79592732b79
+
+    # training set...
+    for count in range(total_iterations):
+        training_arr[:, count] = (training_arr[:, count] - training_arr[:, count].min()) /\
+                                 (training_arr[:, count].max() - training_arr[:, count].min())
+
+    # test set...
+    for count in range(total_iterations):
+        test_to_determine[:, count] = (test_to_determine[:, count] - test_to_determine[:, count].min()) /\
+                                      (test_to_determine[:, count].max() - test_to_determine[:, count].min())
+    best_k = 15
+    alg_labels = knn_algorithm_implementation(test_to_determine, best_k, training_arr, label_arr)
+    print(alg_labels)
 
 
-# This method determines the value of k that is preferable to the KNN implementation.
+# This function determines the value of k that is preferable to the KNN implementation.
+# I've come to a conclusion that k = 11, 15 gives us an accuracy percentage of 82.92682926829268% ( >> 80%)
 def choose_k_to_knn_alg(train_x, train_y):
     min_k_checked = 3
     max_k_checked = 18
@@ -35,9 +54,6 @@ def choose_k_to_knn_alg(train_x, train_y):
     labels_to_compare = label_arr[:threshold]
 
     total_iterations = 12
-    # inspiration for Min-Max normalization:
-    # https://towardsdatascience.com/everything-you-need-to-know-about-min-max-normalization-in-python-b79592732b79
-
     # training set...
     for count in range(total_iterations):
         x[:, count] = (x[:, count] - x[:, count].min()) / (x[:, count].max() - x[:, count].min())
