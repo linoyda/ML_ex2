@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import random
 
 
 def main():
@@ -30,8 +31,23 @@ def main():
         test_to_determine[:, count] = (test_to_determine[:, count] - test_to_determine[:, count].min()) /\
                                       (test_to_determine[:, count].max() - test_to_determine[:, count].min())
     best_k = 15
+    """
+    for _k in range(3, 19, 2):
+        print("k: " + str(_k) + "\n")
+        alg_labels = knn_algorithm_implementation(test_to_determine, _k, training_arr, label_arr)
+        print(alg_labels)
+    """
     alg_labels = knn_algorithm_implementation(test_to_determine, best_k, training_arr, label_arr)
     print(alg_labels)
+
+    # **** End of KNN part. Now - Driver code for Perceptron.
+
+    x_val_w = random.randint(0, 1)
+    y_val_w = random.randint(0, 1)
+    w = (x_val_w, y_val_w)
+    b = 0  # bias
+
+
 
 
 # This function determines the value of k that is preferable to the KNN implementation.
@@ -101,6 +117,20 @@ def knn_algorithm_implementation(test_set, curr_k, x, y):
         # Add the class of the majority to the results list
         results.append(np.argmax(num_of_occurrences))
     return results
+
+
+def train_multiclass_perceptron(x_train, y_train, w):
+    eta = random.randint(0, 1)
+    # Shuffling the lists accordingly.
+    # Inspiration: https://stackoverflow.com/questions/23289547/shuffle-two-list-at-once-with-same-order
+    shuffle_list = list(zip(x_train, y_train))
+    random.shuffle(shuffle_list)
+    train_x, train_y = zip(*shuffle_list)
+    for x, y in zip(train_x, train_y):
+        y_hat_prediction = np.argmax(np.dot(w, x))  # Index of our desired w.
+        if y != y_hat_prediction:  # If so, then - an update is needed.
+            w[y, :] = w[y, :] + eta * x
+            w[y_hat_prediction, :] = w[y_hat_prediction, :] - eta * x
 
 
 if __name__ == "__main__":
