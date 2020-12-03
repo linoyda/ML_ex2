@@ -40,16 +40,8 @@ def main():
     print(alg_labels)
 
     # **** End of KNN part. Now - Driver code for Perceptron.
-
-    training_arr1 = np.loadtxt(train_x, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
-    label_arr1 = np.genfromtxt(train_y)
-
-    # training set...
-    for count in range(total_iterations):
-        training_arr1[:, count] = (training_arr1[:, count] - training_arr1[:, count].min()) / \
-                                 (training_arr1[:, count].max() - training_arr1[:, count].min())
-
-    train_multiclass_perceptron(train_x, train_y)
+    perceptron_output = train_multiclass_perceptron(train_x, train_y, test_x)
+    print(perceptron_output)
 
 
 # This function determines the value of k that is preferable to the KNN implementation.
@@ -121,9 +113,9 @@ def knn_algorithm_implementation(test_set, curr_k, x, y):
     return results
 
 
-def train_multiclass_perceptron(x_train, y_train):
-    eta = 0.36
-    # eta = 0.1
+def train_multiclass_perceptron(x_train, y_train, test_x):
+    perceptron_output = []
+    eta = 0.3611
     total_iterations = 12
     col_amount = 13
     size = 355
@@ -132,6 +124,7 @@ def train_multiclass_perceptron(x_train, y_train):
 
     x_train = np.loadtxt(x_train, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
     y_train = np.genfromtxt(y_train)
+    test_to_determine = np.loadtxt(test_x, delimiter=',', converters={11: lambda d: 1 if d == b'R' else 0})
 
     # This is a multiclass perceptron. So, we need a matrix-shaped W. 3 lines - for each class.
     w = [np.zeros(col_amount), np.zeros(col_amount), np.zeros(col_amount)]
@@ -140,9 +133,17 @@ def train_multiclass_perceptron(x_train, y_train):
         x_train[:, index] = \
             (x_train[:, index] - x_train[:, index].min()) / (x_train[:, index].max() - x_train[:, index].min())
 
+    for count in range(total_iterations):
+        test_to_determine[:, count] = (test_to_determine[:, count] - test_to_determine[:, count].min()) /\
+                                      (test_to_determine[:, count].max() - test_to_determine[:, count].min())
+
     x_train = np.array(x_train)
     y_train = np.array(y_train)
+    test_to_determine = np.array(test_to_determine)
+    size_of_test = len(test_to_determine)
+    test_list = [1] * size_of_test
     x_train = np.concatenate((x_train, np.array(temp_list)[:, None]), axis=1)
+    test_to_determine = np.concatenate((test_to_determine, np.array(test_list)[:, None]), axis=1)
 
     for curr_epoch in range(total_epoches):
         # Shuffling the lists of training set accordingly.
@@ -152,16 +153,8 @@ def train_multiclass_perceptron(x_train, y_train):
 
         sum_of_matches = 0
         for x, y in zip(x_train, y_train):
-            """
-            y_hat_predict = \
-                [np.dot(np.transpose(w[0]), x), np.dot(np.transpose(w[1]), x), np.dot(np.transpose(w[2]), x)]
-            y_hat_predict = np.array(y_hat_predict)
-            y_hat_predict = y_hat_predict.astype(int)
-            maximal_index = np.argmax(y_hat_predict)
-            maximal_prediction = y_hat_predict[maximal_index]
-            """
             maximal_prediction = np.argmax(np.dot(w, x))
-            max_as_int = maximal_prediction.astype(int)
+            maximal_prediction = int(maximal_prediction)
             if maximal_prediction == y:  # If so, there's no need to update... matches sum is increased by 1
                 sum_of_matches = sum_of_matches + 1
             else:
@@ -169,6 +162,11 @@ def train_multiclass_perceptron(x_train, y_train):
                 w[maximal_prediction] = w[maximal_prediction] - np.array(x) * eta
 
         print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
+    for curr_test in test_to_determine:
+        maximal_prediction = np.argmax(np.dot(w, curr_test))
+        perceptron_output.append(maximal_prediction)
+
+    return perceptron_output
 
 
 if __name__ == "__main__":
