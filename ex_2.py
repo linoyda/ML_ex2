@@ -43,6 +43,10 @@ def main():
     perceptron_output = train_multiclass_perceptron(train_x, train_y, test_x)
     print(perceptron_output)
 
+    # Driver code for PA
+    pa_output = passive_aggressive_implementation(train_x, train_y, test_x)
+    print(pa_output)
+
 
 # This function determines the value of k that is preferable to the KNN implementation.
 # I've come to a conclusion that k = 11, 15 gives us an accuracy percentage of 82.92682926829268% ( >> 80%)
@@ -167,6 +171,66 @@ def train_multiclass_perceptron(x_train, y_train, test_x):
         perceptron_output.append(maximal_prediction)
 
     return perceptron_output
+
+
+def passive_aggressive_implementation(x_train, y_train, test_x):
+    pa_output = []
+    total_iterations = 12
+    col_amount = 13
+    size = 355
+    temp_list = [1] * 355
+    total_epoches = 100
+
+    x_train = np.loadtxt(x_train, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
+    y_train = np.genfromtxt(y_train)
+    test_to_determine = np.loadtxt(test_x, delimiter=',', converters={11: lambda d: 1 if d == b'R' else 0})
+
+    w = [np.zeros(col_amount), np.zeros(col_amount), np.zeros(col_amount)]
+
+    for index in range(total_iterations):  # Min-Max normalization
+        x_train[:, index] = \
+            (x_train[:, index] - x_train[:, index].min()) / (x_train[:, index].max() - x_train[:, index].min())
+
+    for count in range(total_iterations):
+        test_to_determine[:, count] = (test_to_determine[:, count] - test_to_determine[:, count].min()) / \
+                                      (test_to_determine[:, count].max() - test_to_determine[:, count].min())
+
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    test_to_determine = np.array(test_to_determine)
+    size_of_test = len(test_to_determine)
+    test_list = [1] * size_of_test
+    x_train = np.concatenate((x_train, np.array(temp_list)[:, None]), axis=1)
+    test_to_determine = np.concatenate((test_to_determine, np.array(test_list)[:, None]), axis=1)
+
+    for curr_epoch in range(total_epoches):
+        # Shuffling the lists of training set accordingly.
+        # Inspiration: https://stackoverflow.com/questions/23289547/shuffle-two-list-at-once-with-same-order
+        shuffle_list = list(zip(x_train, y_train))
+        np.random.shuffle(shuffle_list)
+
+        sum_of_matches = 0
+
+        for x, y in zip(x_train, y_train):
+            maximal_prediction = np.argmax(np.dot(w, x))
+            maximal_prediction = int(maximal_prediction)
+
+            # Determine the value of tau - which effects out update.
+            tau = max(0, (1.0 - np.dot(w[y.astype(int)], x) + np.dot(w[maximal_prediction], x)))\
+                  / (2 * ((np.linalg.norm(x)) ** 2))
+
+            if maximal_prediction == y:  # If so, there's no need to update... matches sum is increased by 1
+                sum_of_matches = sum_of_matches + 1
+            else:
+                w[y.astype(int)] = w[y.astype(int)] + np.array(x) * tau
+                w[maximal_prediction] = w[maximal_prediction] - np.array(x) * tau
+
+        print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
+    for curr_test in test_to_determine:
+        maximal_prediction = np.argmax(np.dot(w, curr_test))
+        pa_output.append(maximal_prediction)
+
+    return pa_output
 
 
 if __name__ == "__main__":
