@@ -1,6 +1,5 @@
 import sys
 import numpy as np
-import random
 
 
 def main():
@@ -42,12 +41,15 @@ def main():
 
     # **** End of KNN part. Now - Driver code for Perceptron.
 
-    x_val_w = random.randint(0, 1)
-    y_val_w = random.randint(0, 1)
-    w = (x_val_w, y_val_w)
-    b = 0  # bias
+    training_arr1 = np.loadtxt(train_x, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
+    label_arr1 = np.genfromtxt(train_y)
 
+    # training set...
+    for count in range(total_iterations):
+        training_arr1[:, count] = (training_arr1[:, count] - training_arr1[:, count].min()) / \
+                                 (training_arr1[:, count].max() - training_arr1[:, count].min())
 
+    train_multiclass_perceptron(train_x, train_y)
 
 
 # This function determines the value of k that is preferable to the KNN implementation.
@@ -119,18 +121,54 @@ def knn_algorithm_implementation(test_set, curr_k, x, y):
     return results
 
 
-def train_multiclass_perceptron(x_train, y_train, w):
-    eta = random.randint(0, 1)
-    # Shuffling the lists accordingly.
-    # Inspiration: https://stackoverflow.com/questions/23289547/shuffle-two-list-at-once-with-same-order
-    shuffle_list = list(zip(x_train, y_train))
-    random.shuffle(shuffle_list)
-    train_x, train_y = zip(*shuffle_list)
-    for x, y in zip(train_x, train_y):
-        y_hat_prediction = np.argmax(np.dot(w, x))  # Index of our desired w.
-        if y != y_hat_prediction:  # If so, then - an update is needed.
-            w[y, :] = w[y, :] + eta * x
-            w[y_hat_prediction, :] = w[y_hat_prediction, :] - eta * x
+def train_multiclass_perceptron(x_train, y_train):
+    eta = 0.36
+    # eta = 0.1
+    total_iterations = 12
+    col_amount = 13
+    size = 355
+    temp_list = [1]*355
+    total_epoches = 100
+
+    x_train = np.loadtxt(x_train, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
+    y_train = np.genfromtxt(y_train)
+
+    # This is a multiclass perceptron. So, we need a matrix-shaped W. 3 lines - for each class.
+    w = [np.zeros(col_amount), np.zeros(col_amount), np.zeros(col_amount)]
+
+    for index in range(total_iterations):  # Min-Max normalization
+        x_train[:, index] = \
+            (x_train[:, index] - x_train[:, index].min()) / (x_train[:, index].max() - x_train[:, index].min())
+
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_train = np.concatenate((x_train, np.array(temp_list)[:, None]), axis=1)
+
+    for curr_epoch in range(total_epoches):
+        # Shuffling the lists of training set accordingly.
+        # Inspiration: https://stackoverflow.com/questions/23289547/shuffle-two-list-at-once-with-same-order
+        shuffle_list = list(zip(x_train, y_train))
+        np.random.shuffle(shuffle_list)
+
+        sum_of_matches = 0
+        for x, y in zip(x_train, y_train):
+            """
+            y_hat_predict = \
+                [np.dot(np.transpose(w[0]), x), np.dot(np.transpose(w[1]), x), np.dot(np.transpose(w[2]), x)]
+            y_hat_predict = np.array(y_hat_predict)
+            y_hat_predict = y_hat_predict.astype(int)
+            maximal_index = np.argmax(y_hat_predict)
+            maximal_prediction = y_hat_predict[maximal_index]
+            """
+            maximal_prediction = np.argmax(np.dot(w, x))
+            max_as_int = maximal_prediction.astype(int)
+            if maximal_prediction == y:  # If so, there's no need to update... matches sum is increased by 1
+                sum_of_matches = sum_of_matches + 1
+            else:
+                w[y.astype(int)] = w[y.astype(int)] + np.array(x) * eta
+                w[maximal_prediction] = w[maximal_prediction] - np.array(x) * eta
+
+        print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
 
 
 if __name__ == "__main__":
