@@ -30,12 +30,6 @@ def main():
         test_to_determine[:, count] = (test_to_determine[:, count] - test_to_determine[:, count].min()) /\
                                       (test_to_determine[:, count].max() - test_to_determine[:, count].min())
     best_k = 15
-    """
-    for _k in range(3, 19, 2):
-        print("k: " + str(_k) + "\n")
-        alg_labels = knn_algorithm_implementation(test_to_determine, _k, training_arr, label_arr)
-        print(alg_labels)
-    """
     alg_labels = knn_algorithm_implementation(test_to_determine, best_k, training_arr, label_arr)
     print(alg_labels)
 
@@ -45,6 +39,7 @@ def main():
 
     # Driver code for PA
     pa_output = passive_aggressive_implementation(train_x, train_y, test_x)
+    # pa_output = passive_aggressive_alg(test_x, train_x, train_y)
     print(pa_output)
 
 
@@ -120,15 +115,16 @@ def knn_algorithm_implementation(test_set, curr_k, x, y):
 def train_multiclass_perceptron(x_train, y_train, test_x):
     perceptron_output = []
     eta = 0.3611
-    total_iterations = 12
-    col_amount = 13
     size = 355
-    temp_list = [1]*355
+    # temp_list = [1]*355
     total_epoches = 100
 
     x_train = np.loadtxt(x_train, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
     y_train = np.genfromtxt(y_train)
     test_to_determine = np.loadtxt(test_x, delimiter=',', converters={11: lambda d: 1 if d == b'R' else 0})
+
+    total_iterations = test_to_determine.shape[1]
+    col_amount = total_iterations + 1
 
     # This is a multiclass perceptron. So, we need a matrix-shaped W. 3 lines - for each class.
     w = [np.zeros(col_amount), np.zeros(col_amount), np.zeros(col_amount)]
@@ -146,6 +142,7 @@ def train_multiclass_perceptron(x_train, y_train, test_x):
     test_to_determine = np.array(test_to_determine)
     size_of_test = len(test_to_determine)
     test_list = [1] * size_of_test
+    temp_list = [1] * len(x_train)
     x_train = np.concatenate((x_train, np.array(temp_list)[:, None]), axis=1)
     test_to_determine = np.concatenate((test_to_determine, np.array(test_list)[:, None]), axis=1)
 
@@ -175,16 +172,15 @@ def train_multiclass_perceptron(x_train, y_train, test_x):
 
 def passive_aggressive_implementation(x_train, y_train, test_x):
     pa_output = []
-    total_iterations = 12
-    col_amount = 13
     size = 355
-    temp_list = [1] * 355
     total_epoches = 100
 
     x_train = np.loadtxt(x_train, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
     y_train = np.genfromtxt(y_train)
     test_to_determine = np.loadtxt(test_x, delimiter=',', converters={11: lambda d: 1 if d == b'R' else 0})
 
+    total_iterations = test_to_determine.shape[1]
+    col_amount = total_iterations + 1
     w = [np.zeros(col_amount), np.zeros(col_amount), np.zeros(col_amount)]
 
     for index in range(total_iterations):  # Min-Max normalization
@@ -198,8 +194,10 @@ def passive_aggressive_implementation(x_train, y_train, test_x):
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     test_to_determine = np.array(test_to_determine)
+
     size_of_test = len(test_to_determine)
     test_list = [1] * size_of_test
+    temp_list = [1] * len(x_train)
     x_train = np.concatenate((x_train, np.array(temp_list)[:, None]), axis=1)
     test_to_determine = np.concatenate((test_to_determine, np.array(test_list)[:, None]), axis=1)
 
@@ -212,6 +210,8 @@ def passive_aggressive_implementation(x_train, y_train, test_x):
         sum_of_matches = 0
 
         for x, y in zip(x_train, y_train):
+            #new_w = np.delete(w, y.astype(int), 0)
+            #maximal_prediction = np.argmax(np.dot(new_w, x))
             maximal_prediction = np.argmax(np.dot(w, x))
             maximal_prediction = int(maximal_prediction)
 
@@ -221,7 +221,9 @@ def passive_aggressive_implementation(x_train, y_train, test_x):
 
             if maximal_prediction == y:  # If so, there's no need to update... matches sum is increased by 1
                 sum_of_matches = sum_of_matches + 1
-            else:
+            #if maximal_prediction >= y:
+            #    maximal_prediction += 1
+            if maximal_prediction != y:
                 w[y.astype(int)] = w[y.astype(int)] + np.array(x) * tau
                 w[maximal_prediction] = w[maximal_prediction] - np.array(x) * tau
 
