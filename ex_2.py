@@ -7,7 +7,6 @@ def main():
     train_x, train_y -- the already known data, already classified
     test_x --- todo: Determine its labels according to the distance to train_x, train_y
     """
-
     total_iterations = 12
     train_x, train_y, test_x = sys.argv[1], sys.argv[2], sys.argv[3]
     # choose_k_to_knn_alg(train_x, train_y)
@@ -30,17 +29,18 @@ def main():
         test_to_determine[:, count] = (test_to_determine[:, count] - test_to_determine[:, count].min()) /\
                                       (test_to_determine[:, count].max() - test_to_determine[:, count].min())
     best_k = 15
-    alg_labels = knn_algorithm_implementation(test_to_determine, best_k, training_arr, label_arr)
-    print(alg_labels)
+    knn_output = knn_algorithm_implementation(test_to_determine, best_k, training_arr, label_arr)
 
-    # **** End of KNN part. Now - Driver code for Perceptron.
+    # Driver code for Perceptron.
     perceptron_output = train_multiclass_perceptron(train_x, train_y, test_x)
-    print(perceptron_output)
 
     # Driver code for PA
     pa_output = passive_aggressive_implementation(train_x, train_y, test_x)
-    # pa_output = passive_aggressive_alg(test_x, train_x, train_y)
-    print(pa_output)
+
+    # Printing the labels got from the 3 algorithms I've implemented.
+    iterations_over_output = len(pa_output)
+    for curr_iter in range(iterations_over_output):
+        print(f"knn: {knn_output[curr_iter]}, perceptron: {perceptron_output[curr_iter]}, pa: {pa_output[curr_iter]}")
 
 
 # This function determines the value of k that is preferable to the KNN implementation.
@@ -116,7 +116,6 @@ def train_multiclass_perceptron(x_train, y_train, test_x):
     perceptron_output = []
     eta = 0.3611
     size = 355
-    # temp_list = [1]*355
     total_epoches = 100
 
     x_train = np.loadtxt(x_train, delimiter=',', converters={11: lambda f: 1 if f == b'R' else 0})
@@ -162,7 +161,7 @@ def train_multiclass_perceptron(x_train, y_train, test_x):
                 w[y.astype(int)] = w[y.astype(int)] + np.array(x) * eta
                 w[maximal_prediction] = w[maximal_prediction] - np.array(x) * eta
 
-        print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
+        # print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
     for curr_test in test_to_determine:
         maximal_prediction = np.argmax(np.dot(w, curr_test))
         perceptron_output.append(maximal_prediction)
@@ -207,29 +206,35 @@ def passive_aggressive_implementation(x_train, y_train, test_x):
         shuffle_list = list(zip(x_train, y_train))
         np.random.shuffle(shuffle_list)
 
-        sum_of_matches = 0
-
         for x, y in zip(x_train, y_train):
-            #new_w = np.delete(w, y.astype(int), 0)
-            #maximal_prediction = np.argmax(np.dot(new_w, x))
-            maximal_prediction = np.argmax(np.dot(w, x))
-            maximal_prediction = int(maximal_prediction)
 
-            # Determine the value of tau - which effects out update.
-            tau = max(0, (1.0 - np.dot(w[y.astype(int)], x) + np.dot(w[maximal_prediction], x)))\
-                  / (2 * ((np.linalg.norm(x)) ** 2))
+            # Remove the actual label from the w matrix according to y's value.
+            y = int(y)
+            if y == 0:
+                new_w_without_y = min(np.dot(w[1], x), np.dot(w[2], x)) - 1
+                mult_result_w = [new_w_without_y, np.dot(w[1], x), np.dot(w[2], x)]
+            elif y == 1:
+                new_w_without_y = min(np.dot(w[0], x), np.dot(w[2], x)) - 1
+                mult_result_w = [np.dot(w[0], x), np.dot(w[1], x), new_w_without_y]
+            else:  # o.w. - y == 2
+                new_w_without_y = min(np.dot(w[0], x), np.dot(w[1], x)) - 1
+                mult_result_w = [np.dot(w[0], x), np.dot(w[1], x), new_w_without_y]
+            maximal_prediction = int(np.argmax(mult_result_w))
+            tau = max(0, (1.0 - np.dot(w[y], x) + np.dot(w[maximal_prediction], x))) / (2 * ((np.linalg.norm(x)) ** 2))
+            w[y] = w[y] + (x * tau)
+            w[maximal_prediction] = w[maximal_prediction] - (x * tau)
 
-            if maximal_prediction == y:  # If so, there's no need to update... matches sum is increased by 1
-                sum_of_matches = sum_of_matches + 1
-            #if maximal_prediction >= y:
-            #    maximal_prediction += 1
-            if maximal_prediction != y:
-                w[y.astype(int)] = w[y.astype(int)] + np.array(x) * tau
-                w[maximal_prediction] = w[maximal_prediction] - np.array(x) * tau
+        sum_of_matches = 0
+        for x, y in zip(x_train, y_train):
+            mult_res_check = [np.dot(w[0], x), np.dot(w[1], x), np.dot(w[2], x)]
+            maximal_predict = np.argmax(mult_res_check)
+            if maximal_predict == y:
+                sum_of_matches += 1
+        # print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
 
-        print("epoch: {}, success rate: {}".format(curr_epoch, (sum_of_matches / size) * 100))
     for curr_test in test_to_determine:
-        maximal_prediction = np.argmax(np.dot(w, curr_test))
+        mult_res_check = [np.dot(w[0], curr_test), np.dot(w[1], curr_test), np.dot(w[2], curr_test)]
+        maximal_prediction = np.argmax(mult_res_check)
         pa_output.append(maximal_prediction)
 
     return pa_output
